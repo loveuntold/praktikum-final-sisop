@@ -19,7 +19,10 @@ void fsRead(struct file_metadata* metadata, enum fs_return* status) {
 
   int i;
   int j;
-  int found = -1;
+  bool not_found = false;
+  int data_index;
+  int index = -1; 
+
 
   readSector(&data_fs_buf, FS_DATA_SECTOR_NUMBER);
   readSector(&(node_fs_buf.nodes[0]), FS_NODE_SECTOR_NUMBER);
@@ -27,31 +30,36 @@ void fsRead(struct file_metadata* metadata, enum fs_return* status) {
 
   for(i=0; i<FS_MAX_NODE; i++){
     if(strcmp(node_fs_buf.nodes[i].node_name, metadata->node_name) == 0 && node_fs_buf.nodes[i].parent_index == metadata->parent_index){
-      found = i;
+      not_found = false;
+      index = i;
       break;
+    }
+    else{
+      not_found = true;
     }
   }
 
-  if(found == -1){
+  if(not_found){
     *status = FS_R_NODE_NOT_FOUND;
     return;
   }
 
-  if(node_fs_buf.nodes[found].data_index == FS_NODE_D_DIR){
+  if(node_fs_buf.nodes[index].data_index == FS_NODE_D_DIR){
     *status = FS_R_TYPE_IS_DIRECTORY;
     return;
-    
-    metadata->filesize = 0;
-    for(i=0; i<FS_MAX_SECTOR; i++){
-      if(data_fs_buf.datas[node_fs_buf.nodes[found].data_index].sectors[i] == 0){
-        break;
-      }
-      readSector(&(metadata->buffer[i*SECTOR_SIZE]), data_fs_buf.datas[node_fs_buf.nodes[found].data_index].sectors[i]);
-      metadata->filesize += SECTOR_SIZE;
-    }
-
-    *status = FS_SUCCESS;
   }
+
+  data_index = node_fs_buf.nodes[index].data_index;
+
+  for(i=0; i<FS_MAX_SECTOR; i++){
+    if(data_fs_buf.datas[data_index].sectors[i] == 0){
+      break;
+    }
+    readSector(&(metadata->buffer[i*SECTOR_SIZE]), data_fs_buf.datas[data_index].sectors[i]);
+  }
+
+  *status = FS_SUCCESS;
+  
 }
 
 // TODO: 3. Implement fsWrite function
@@ -67,6 +75,7 @@ void fsWrite(struct file_metadata* metadata, enum fs_return* status) {
   int empty_data_index = -1;
   int free_block = 0;
   int sector_index = 0;
+  int sector_needed = metadata->filesize / SECTOR_SIZE + 1;
 
   readSector(&data_fs_buf, FS_DATA_SECTOR_NUMBER);
   readSector(&(node_fs_buf.nodes[0]), FS_NODE_SECTOR_NUMBER);
@@ -104,7 +113,6 @@ void fsWrite(struct file_metadata* metadata, enum fs_return* status) {
     return;
   }
 
-  int sector_needed = metadata->filesize / SECTOR_SIZE + 1;
   for(i=0; i<FS_MAX_SECTOR; i++){
     if(data_fs_buf.datas[empty_data_index].sectors[i] == 0){
       free_block++;
