@@ -29,7 +29,7 @@ void fsRead(struct file_metadata* metadata, enum fs_return* status) {
   readSector(&(node_fs_buf.nodes[32]), FS_NODE_SECTOR_NUMBER+1);
 
   for(i=0; i<FS_MAX_NODE; i++){
-    if(strcmp(node_fs_buf.nodes[i].node_name, metadata->node_name) == 0 && node_fs_buf.nodes[i].parent_index == metadata->parent_index){
+    if(strcmp(node_fs_buf.nodes[i].node_name, metadata->node_name) && node_fs_buf.nodes[i].parent_index == metadata->parent_index){
       not_found = false;
       index = i;
       break;
@@ -59,7 +59,7 @@ void fsRead(struct file_metadata* metadata, enum fs_return* status) {
   }
 
   *status = FS_SUCCESS;
-  
+
 }
 
 // TODO: 3. Implement fsWrite function
@@ -82,7 +82,7 @@ void fsWrite(struct file_metadata* metadata, enum fs_return* status) {
   readSector(&(node_fs_buf.nodes[32]), FS_NODE_SECTOR_NUMBER+1);
 
   for(i=0; i<FS_MAX_NODE; i++){
-    if(strcmp(node_fs_buf.nodes[i].node_name, metadata->node_name) == 0 && node_fs_buf.nodes[i].parent_index == metadata->parent_index){
+    if(strcmp(node_fs_buf.nodes[i].node_name, metadata->node_name) && node_fs_buf.nodes[i].parent_index == metadata->parent_index){
       found = true;
       break;
     }
