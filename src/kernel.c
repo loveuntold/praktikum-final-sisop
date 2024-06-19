@@ -3,42 +3,9 @@
 #include "filesystem.h"
 
 void main() {
-    struct file_metadata file;
-    enum fs_return status;
-    struct file_metadata readFile;
-    char *data = "Hello, world!";
-    file.parent_index = 0x01;
-    file.filesize = strlen(data);
-    readFile.parent_index = 0x01;
-    fsInit();
-    clearScreen();
-    strcpy(file.node_name, "testfile");
-    memcpy(file.buffer, (byte*)data, file.filesize);
-    fsWrite(&file, &status);
-    if(status == FS_SUCCESS){
-        printString("File written successfully!\n");
-    }
-    else{
-        printString("1. Failed to write file.\n");
-        return;
-    }
-
-    strcpy(readFile.node_name, "testfile");
-
-    fsRead(&readFile, &status);
-    if(status == FS_SUCCESS){
-        printString("file read successfully\n");
-        printString("Content: ");
-        printString((char*)readFile.buffer);
-        printString("\n");
-    } 
-    else{
-        printString("failed to read file\n");
-    }
-
-    while (1) {
-  
-    }
+  fsInit();
+  clearScreen();
+  shell();
 }
 
 void printString(char* str) {
