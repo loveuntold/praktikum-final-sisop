@@ -121,7 +121,6 @@ void cd(byte* cwd, char* dirname){
     if(*cwd != FS_NODE_P_ROOT){
       *cwd = node_fs_buf.nodes[*cwd].parent_index;
     }
-    return;
   } else{
     for(i=0; i<FS_MAX_NODE; i++){
       if(strcmp(node_fs_buf.nodes[i].node_name, dirname) && node_fs_buf.nodes[i].parent_index == *cwd){
@@ -151,6 +150,7 @@ void ls(byte cwd, char* dirname){
     for(i=0; i<FS_MAX_NODE; i++){
       if(strcmp(node_fs_buf.nodes[i].node_name, dirname) && node_fs_buf.nodes[i].parent_index == cwd){
         target = i;
+        break;
       } else{
         printString("Directory not found\n");
         return;
