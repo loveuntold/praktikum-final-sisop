@@ -150,7 +150,7 @@ void ls(byte cwd, char* dirname) {
   readSector(&(node_fs_buf.nodes[0]), FS_NODE_SECTOR_NUMBER);
   readSector(&(node_fs_buf.nodes[32]), FS_NODE_SECTOR_NUMBER + 1);
 
-  if(dirname[0] != '\0' && !strcmp(dirname, ".")){
+  if(dirname[0] != '\0' && strcmp(dirname, ".")){
     bool found = false;
     
     for(i=0; i<FS_MAX_NODE; i++){
