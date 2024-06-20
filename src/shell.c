@@ -3,14 +3,14 @@
 #include "std_lib.h"
 #include "filesystem.h"
 
-void shell() {
+void shell(){
   char buf[64];
   char cmd[64];
   char arg[2][64];
 
   byte cwd = FS_NODE_P_ROOT;
 
-  while (true) {
+  while(true){
     printString("MengOS:");
     printCWD(cwd);
     printString("$ ");
@@ -29,56 +29,78 @@ void shell() {
 }
 
 // TODO: 4. Implement printCWD function
-void printCWD(byte cwd) {
+void printCWD(byte cwd){
   struct node_fs node_fs_buf;
+  byte path[64];  
   int i;
-  byte path[64];
-  int depth = 0;
+  int index = 0;
 
   readSector(&(node_fs_buf.nodes[0]), FS_NODE_SECTOR_NUMBER);
-  readSector(&(node_fs_buf.nodes[32]), FS_NODE_SECTOR_NUMBER);
+  readSector(&(node_fs_buf.nodes[32]), FS_NODE_SECTOR_NUMBER + 1);
 
-  while (cwd != FS_NODE_P_ROOT) {
-    path[depth++] = cwd;
+  while(cwd != FS_NODE_P_ROOT){
+    path[index] = cwd;
     cwd = node_fs_buf.nodes[cwd].parent_index;
+    index++;
   }
 
   printString("/");
-  for (i = depth-1; i >= 0 ; i--) {
+
+  for(i=index - 1; i >= 0; i--){
     printString(node_fs_buf.nodes[path[i]].node_name);
-    printString("/");
+    printString("/"); 
   }
+
 }
 
 // TODO: 5. Implement parseCommand function
-void parseCommand(char* buf, char* cmd, char arg[2][64]) {
-  int i, j, k;
+void parseCommand(char* buf, char* cmd, char arg[2][64]){
+  int i = 0;
+  int j = 0;
 
-  for (i = 0; i < 64; i++) {
+
+  for(i=0; i<FS_MAX_NODE; i++){
     cmd[i] = '\0';
     arg[0][i] = '\0';
     arg[1][i] = '\0';
   }
+
   i = 0;
 
-  while (buf[i] != ' ' && buf[i] != '\0') {
+  while(buf[i] != ' ' && buf[i] != '\0'){
     cmd[i] = buf[i];
     i++;
   }
+
   cmd[i] = '\0';
 
-  if (buf[i++] == '\0') {
+  if(buf[i] == '\0'){
     return;
   }
 
-  for (k=0; k<2; k++) {
-    j=0;
-    while (buf[i] != ' ' && buf[i] != '\0') {
-      arg[k][j++] = buf[i++];
-    }
-    arg[k][j] = '\0';
-    if (buf[i] != '\0') i++;
+  i++;
+
+  while(buf[i] == ' '){
+    i++;
   }
+
+  j = 0;
+  while(buf[i] != ' ' && buf[i] != '\0'){
+        arg[0][j++] = buf[i++];
+  }
+
+  arg[0][j] = '\0';
+
+  while(buf[i] == ' '){
+    i++;
+  }
+
+  j = 0;
+  while(buf[i] != ' ' && buf[i] != '\0'){
+    arg[1][j++] = buf[i++];
+  }
+
+  arg[1][j] = '\0';
 }
 
 // TODO: 6. Implement cd function
@@ -153,136 +175,14 @@ void ls(byte cwd, char* dirname) {
 }
 
 // TODO: 8. Implement mv function
-void mv(byte cwd, char* src, char* dst) {
-  struct node_fs node_fs_buf;
-  int i;
-  byte src_index = 0xFF, dst_index = 0xFF;
-
-  readSector(&(node_fs_buf.nodes[0]), FS_NODE_SECTOR_NUMBER);
-  readSector(&(node_fs_buf.nodes[32]), FS_NODE_SECTOR_NUMBER + 1);
-
-  for (i = 0; i < FS_MAX_NODE; i++) {
-    if (strcmp(node_fs_buf.nodes[i].node_name, src) && node_fs_buf.nodes[i].parent_index == cwd) {
-      src_index = i;
-      break;
-    }
-  }
-
-  if (src_index == 0xFF) {
-    printString("Source file not found\n");
-    return;
-  }
-
-  for (i = 0; i < FS_MAX_NODE; i++) {
-    if (strcmp(node_fs_buf.nodes[i].node_name, dst) && node_fs_buf.nodes[i].parent_index == cwd) {
-      dst_index = i;
-      break;
-    }
-  }
-
-  if (dst_index != 0xFF) {
-    printString("Destination already exists\n");
-    return;
-  }
-
-  strcpy(node_fs_buf.nodes[src_index].node_name, dst);
-
-  writeSector(&(node_fs_buf.nodes[0]), FS_NODE_SECTOR_NUMBER);
-  writeSector(&(node_fs_buf.nodes[32]), FS_NODE_SECTOR_NUMBER + 1);
-}
+void mv(byte cwd, char* src, char* dst) {}
 
 // TODO: 9. Implement cp function
-void cp(byte cwd, char* src, char* dst) {
-  struct file_metadata metadata_src, metadata_dst;
-  enum fs_return status;
-  struct node_fs node_fs_buf;
-  int i;
-
-  metadata_src.parent_index = cwd;
-  strcpy(metadata_src.node_name, src);
-
-  fsRead(&metadata_src, &status);
-  if (status != FS_SUCCESS) {
-    printString("Source file not found\n");
-    return;
-  }
-
-  readSector(&(node_fs_buf.nodes[0]), FS_NODE_SECTOR_NUMBER);
-  readSector(&(node_fs_buf.nodes[32]), FS_NODE_SECTOR_NUMBER + 1);
-
-  for (i = 0; i < FS_MAX_NODE; i++) {
-    if (strcmp(node_fs_buf.nodes[i].node_name, dst) && node_fs_buf.nodes[i].parent_index == cwd) {
-      printString("Destination already exists\n");
-      return;
-    }
-  }
-
-  metadata_dst.parent_index = cwd;
-  metadata_dst.filesize = metadata_src.filesize;
-  strcpy(metadata_dst.node_name, dst);
-  memcpy(metadata_dst.buffer, metadata_src.buffer, metadata_src.filesize);
-
-  fsWrite(&metadata_dst, &status);
-  if (status != FS_SUCCESS) {
-    printString("Failed to copy file\n");
-    return;
-  }
-}
+void cp(byte cwd, char* src, char* dst) {}
 
 // TODO: 10. Implement cat function
-void cat(byte cwd, char* filename) {
-  struct file_metadata metadata;
-  enum fs_return status;
-  int i;
-
-  metadata.parent_index = cwd;
-  strcpy(metadata.node_name, filename);
-
-  fsRead(&metadata, &status);
-  if (status != FS_SUCCESS) {
-    printString("File not found\n");
-    return;
-  }
-
-  for (i = 0; i < metadata.filesize; i++) {
-    char c = metadata.buffer[i];
-    interrupt(0x10, 0xE << 8 | c, 0, 0, 0);
-  }
-  printString("\n");
-}
+void cat(byte cwd, char* filename) {}
 
 // TODO: 11. Implement mkdir function
-void mkdir(byte cwd, char* dirname) {
-  struct node_fs node_fs_buf;
-  int i, free_node_index = -1;
-
-  readSector(&(node_fs_buf.nodes[0]), FS_NODE_SECTOR_NUMBER);
-  readSector(&(node_fs_buf.nodes[32]), FS_NODE_SECTOR_NUMBER + 1);
-
-  for (i = 0; i < FS_MAX_NODE; i++) {
-    if (strcmp(node_fs_buf.nodes[i].node_name, dirname) && node_fs_buf.nodes[i].parent_index == cwd) {
-      printString("Directory already exists\n");
-      return;
-    }
-  }
-
-  for (i = 0; i < FS_MAX_NODE; i++) {
-    if (node_fs_buf.nodes[i].parent_index == 0x00 && node_fs_buf.nodes[i].data_index == 0x00) {
-      free_node_index = i;
-      break;
-    }
-  }
-
-  if (free_node_index == -1) {
-    printString("No free node available\n");
-    return;
-  }
-
-  node_fs_buf.nodes[free_node_index].parent_index = cwd;
-  node_fs_buf.nodes[free_node_index].data_index = FS_NODE_D_DIR;
-  strcpy(node_fs_buf.nodes[free_node_index].node_name, dirname);
-
-  writeSector(&(node_fs_buf.nodes[0]), FS_NODE_SECTOR_NUMBER);
-  writeSector(&(node_fs_buf.nodes[32]), FS_NODE_SECTOR_NUMBER + 1);
-}
+void mkdir(byte cwd, char* dirname) {}
 
