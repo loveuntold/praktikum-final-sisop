@@ -150,14 +150,13 @@ void ls(byte cwd, char* dirname) {
   readSector(&(node_fs_buf.nodes[0]), FS_NODE_SECTOR_NUMBER);
   readSector(&(node_fs_buf.nodes[32]), FS_NODE_SECTOR_NUMBER + 1);
 
-  if(dirname[0] != '\0' && strcmp(dirname, ".")){
-    bool found = false;
+// for ls and ls .
+  if(strlen(dirname) > 0 && !strcmp(dirname, ".")){
     
     for(i=0; i<FS_MAX_NODE; i++){
       if(strcmp(node_fs_buf.nodes[i].node_name, dirname) && node_fs_buf.nodes[i].parent_index == cwd){
         if(node_fs_buf.nodes[i].data_index == FS_NODE_D_DIR){
           target = i;
-          found = true;
           break;
         }else{
           printString("Error: Not a directory\n");
@@ -165,9 +164,9 @@ void ls(byte cwd, char* dirname) {
         }
       }
     }
-    
-    if(!found){
-      printString("Error: Directory not found\n");
+
+    if(i == FS_MAX_NODE){
+      printString("Directory Not Found\n");
       return;
     }
   }
@@ -175,9 +174,11 @@ void ls(byte cwd, char* dirname) {
   for(i=0; i<FS_MAX_NODE; i++){
     if(node_fs_buf.nodes[i].parent_index == target){
       printString(node_fs_buf.nodes[i].node_name);
-      printString("\n");
+      printString(" ");
     }
   }
+
+  printString("\n");
 }
 
 
