@@ -213,7 +213,7 @@ void mv(byte cwd, char* src, char* dst){
     }else if(dst[0] == '.' && dst[1] == '.' && dst[2] == '/'){ 
         parent_index = node_fs_buf.nodes[cwd].parent_index;
         strcpy(filename, dst + 3);
-    } else{
+    }else{
         for(i = strlen(dst) - 1; i >= 0; i--){
             if(dst[i] == '/'){
                 len = i;
@@ -221,36 +221,40 @@ void mv(byte cwd, char* src, char* dst){
             }
         }
 
-        filename[len] = '\0';
-        strcpy(filename, dst + len + 1);
-
-        for(i=0; i<FS_MAX_NODE; i++){
-            if(strcmp(node_fs_buf.nodes[i].node_name, dst) && node_fs_buf.nodes[i].parent_index == cwd){
-                dst_index = i;
-                break;
+        if(i>=0){
+            for(i=0; i<FS_MAX_NODE; i++){
+                if(strcmp(node_fs_buf.nodes[i].node_name, dst) && node_fs_buf.nodes[i].parent_index == cwd){
+                    if(node_fs_buf.nodes[i].data_index == FS_NODE_D_DIR){
+                        parent_index = i;
+                        strcpy(filename, src);
+                        break;
+                    }else{
+                        printString("Error: Destination is not a directory\n");
+                        return;
+                    }
+                }
             }
-        }
 
-        if(dst_index == -1){
-            printString("Error: Destination not found\n");
-            return;
+          strcpy(filename, dst + len + 1);
+        }else{
+            parent_index = cwd;
+            strcpy(filename, dst);
         }
-
-        if(node_fs_buf.nodes[dst_index].data_index != FS_NODE_D_DIR){
-            printString("Error: Destination is not a directory\n");
-            return;
-        }
-
-        parent_index = dst_index;
+    
     }
 
-    node_fs_buf.nodes[src_index].parent_index = parent_index;
+    for(i=0; i<FS_MAX_NODE; i++){
+        if(strcmp(node_fs_buf.nodes[i].node_name, filename) && node_fs_buf.nodes[i].parent_index == parent_index){
+            printString("Error: File already exists\n");
+            return;
+        }
+    }
+
     strcpy(node_fs_buf.nodes[src_index].node_name, filename);
+    node_fs_buf.nodes[src_index].parent_index = parent_index;
 
     writeSector(&(node_fs_buf.nodes[0]), FS_NODE_SECTOR_NUMBER);
     writeSector(&(node_fs_buf.nodes[32]), FS_NODE_SECTOR_NUMBER + 1);
-
-    printString("File moved\n");
 
 } 
 

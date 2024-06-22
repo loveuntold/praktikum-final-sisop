@@ -21,7 +21,7 @@ build: prepare asm library link
 run:
 # TODO: adjust to your local bochs path
 # wsl:
-	bochs.exe
+	/mnt/c/'Program Files'/Bochs-2.8/bochs.exe -f bochsrc.txt
 # linux:
 #	bochs
 
