@@ -181,9 +181,11 @@ void ls(byte cwd, char* dirname){
 void mv(byte cwd, char* src, char* dst){
     struct node_fs node_fs_buf;
     int i;
+    int len;
     int src_index = -1;
-    byte parent = cwd;
-    char directoryName[64];
+    int dst_index = -1;
+    byte parent_index;
+    char filename[64];
 
     readSector(&(node_fs_buf.nodes[0]), FS_NODE_SECTOR_NUMBER);
     readSector(&(node_fs_buf.nodes[32]), FS_NODE_SECTOR_NUMBER + 1);
@@ -206,44 +208,49 @@ void mv(byte cwd, char* src, char* dst){
     }
 
     if(dst[0] == '/'){
-        parent = FS_NODE_P_ROOT;
-        strcpy(directoryName, dst + 1);
+        parent_index = FS_NODE_P_ROOT;
+        strcpy(filename, dst + 1);
     }else if(dst[0] == '.' && dst[1] == '.' && dst[2] == '/'){ 
-        parent = node_fs_buf.nodes[cwd].parent_index;
-        strcpy(directoryName, dst + 3);
+        parent_index = node_fs_buf.nodes[cwd].parent_index;
+        strcpy(filename, dst + 3);
     } else{
-        for(i=0; i<FS_MAX_NODE; i++){
-            if(strcmp(node_fs_buf.nodes[i].node_name, dst) && node_fs_buf.nodes[i].parent_index == cwd){
-                parent = i;
-                int len = strlen(node_fs_buf.nodes[i].node_name) + 1;
-                strcpy(directoryName, len + dst);
+        for(i = strlen(dst) - 1; i >= 0; i--){
+            if(dst[i] == '/'){
+                len = i;
                 break;
             }
         }
-    }
 
-    if(i == FS_MAX_NODE){
-        printString("Error: Destination not found\n");
-        return;
-    }
+        filename[len] = '\0';
+        strcpy(filename, dst + len + 1);
 
-    if(node_fs_buf.nodes[parent].data_index != FS_NODE_D_DIR){
-        printString("Error: Destination is not a directory\n");
-        return;
-    }
+        for(i=0; i<FS_MAX_NODE; i++){
+            if(strcmp(node_fs_buf.nodes[i].node_name, dst) && node_fs_buf.nodes[i].parent_index == cwd){
+                dst_index = i;
+                break;
+            }
+        }
 
-    for(i=0; i<FS_MAX_NODE; i++){
-        if(strcmp(node_fs_buf.nodes[i].node_name, directoryName) && node_fs_buf.nodes[i].parent_index == parent){
-            printString("Error: Destination already exists\n");
+        if(dst_index == -1){
+            printString("Error: Destination not found\n");
             return;
         }
+
+        if(node_fs_buf.nodes[dst_index].data_index != FS_NODE_D_DIR){
+            printString("Error: Destination is not a directory\n");
+            return;
+        }
+
+        parent_index = dst_index;
     }
 
-    node_fs_buf.nodes[src_index].parent_index = parent;
-    strcpy(node_fs_buf.nodes[src_index].node_name, directoryName);
+    node_fs_buf.nodes[src_index].parent_index = parent_index;
+    strcpy(node_fs_buf.nodes[src_index].node_name, filename);
 
     writeSector(&(node_fs_buf.nodes[0]), FS_NODE_SECTOR_NUMBER);
     writeSector(&(node_fs_buf.nodes[32]), FS_NODE_SECTOR_NUMBER + 1);
+
+    printString("File moved\n");
 
 } 
 
