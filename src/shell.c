@@ -178,69 +178,74 @@ void ls(byte cwd, char* dirname){
 
 
 // TODO: 8. Implement mv function
-void mv(byte cwd, char* src, char* dst) {
+void mv(byte cwd, char* src, char* dst){
     struct node_fs node_fs_buf;
-    int i, j;
+    int i;
     int src_index = -1;
-    char *outputname = dst;
-    byte new_parent_index = cwd;
+    byte parent = cwd;
+    char directoryName[64];
 
     readSector(&(node_fs_buf.nodes[0]), FS_NODE_SECTOR_NUMBER);
     readSector(&(node_fs_buf.nodes[32]), FS_NODE_SECTOR_NUMBER + 1);
 
-    // Find the source file
-    for (i = 0; i < FS_MAX_NODE; i++) {
-        if (strcmp(node_fs_buf.nodes[i].node_name, src) == 0 && node_fs_buf.nodes[i].parent_index == cwd) {
+    for(i=0; i<FS_MAX_NODE; i++){
+        if(strcmp(node_fs_buf.nodes[i].node_name, src) && node_fs_buf.nodes[i].parent_index == cwd){
             src_index = i;
             break;
         }
     }
 
-    if (src_index == -1) {
+    if(src_index == -1){
         printString("Error: Source not found\n");
         return;
     }
 
-    if (node_fs_buf.nodes[src_index].data_index == FS_NODE_D_DIR) {
-        printString("Error: Cannot move a directory\n");
+    if(node_fs_buf.nodes[src_index].data_index == FS_NODE_D_DIR){
+        printString("Error: Source is a directory\n");
         return;
     }
 
-    // Determine the new parent index and output name for the destination
-    if (dst[0] == '/') {
-        new_parent_index = FS_NODE_P_ROOT;
-        outputname = dst + 1;
-    } else if (dst[0] == '.' && dst[1] == '.' && dst[2] == '/') {
-        new_parent_index = node_fs_buf.nodes[cwd].parent_index;
-        outputname = dst + 3;
-    } else {
-        for (i = 0; i < FS_MAX_NODE; i++) {
-            if (strcmp(node_fs_buf.nodes[i].node_name, dst) == 0 && node_fs_buf.nodes[i].parent_index == cwd) {
-              new_parent_index = i;
-              outputname = src;
-              break;
+    if(dst[0] == '/'){
+        parent = FS_NODE_P_ROOT;
+        strcpy(directoryName, dst + 1);
+    }else if(dst[0] == '.' && dst[1] == '.' && dst[2] == '/'){ 
+        parent = node_fs_buf.nodes[cwd].parent_index;
+        strcpy(directoryName, dst + 3);
+    } else{
+        for(i=0; i<FS_MAX_NODE; i++){
+            if(strcmp(node_fs_buf.nodes[i].node_name, dst) && node_fs_buf.nodes[i].parent_index == cwd){
+                parent = i;
+                int len = strlen(node_fs_buf.nodes[i].node_name) + 1;
+                strcpy(directoryName, len + dst);
+                break;
             }
         }
     }
 
-    // Ensure the destination directory is valid
-    for (i = 0; i < FS_MAX_NODE; i++) {
-        if (strcmp(node_fs_buf.nodes[i].node_name, outputname) == 0 && node_fs_buf.nodes[i].parent_index == new_parent_index) {
-            printString("Error: File or directory with the same name already exists\n");
+    if(i == FS_MAX_NODE){
+        printString("Error: Destination not found\n");
+        return;
+    }
+
+    if(node_fs_buf.nodes[parent].data_index != FS_NODE_D_DIR){
+        printString("Error: Destination is not a directory\n");
+        return;
+    }
+
+    for(i=0; i<FS_MAX_NODE; i++){
+        if(strcmp(node_fs_buf.nodes[i].node_name, directoryName) && node_fs_buf.nodes[i].parent_index == parent){
+            printString("Error: Destination already exists\n");
             return;
         }
     }
 
-    // Update the source file's parent index and name
-    node_fs_buf.nodes[src_index].parent_index = new_parent_index;
-    strcpy(node_fs_buf.nodes[src_index].node_name, outputname);
+    node_fs_buf.nodes[src_index].parent_index = parent;
+    strcpy(node_fs_buf.nodes[src_index].node_name, directoryName);
 
-    // Write back the updated nodes to the filesystem
     writeSector(&(node_fs_buf.nodes[0]), FS_NODE_SECTOR_NUMBER);
     writeSector(&(node_fs_buf.nodes[32]), FS_NODE_SECTOR_NUMBER + 1);
 
-    printString("File moved successfully\n");
-}
+} 
 
 
 
