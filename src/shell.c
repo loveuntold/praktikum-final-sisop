@@ -103,13 +103,8 @@ void parseCommand(char* buf, char* cmd, char arg[2][64]){
   arg[1][j] = '\0';
 }
 
-#include "shell.h"
-#include "kernel.h"
-#include "std_lib.h"
-#include "filesystem.h"
-
 // TODO: 6. Implement cd function
-void cd(byte* cwd, char* dirname) {
+void cd(byte* cwd, char* dirname){
   struct node_fs node_fs_buf;
   int i;
 
@@ -142,7 +137,7 @@ void cd(byte* cwd, char* dirname) {
 
 
 // TODO: 7. Implement ls function
-void ls(byte cwd, char* dirname) {
+void ls(byte cwd, char* dirname){
   struct node_fs node_fs_buf;
   int i;
   byte target = cwd;
@@ -183,7 +178,50 @@ void ls(byte cwd, char* dirname) {
 
 
 // TODO: 8. Implement mv function
-void mv(byte cwd, char* src, char* dst) {}
+void mv(byte cwd, char* src, char* dst){
+    struct node_fs node_fs_buf;
+    int i;
+    int src_index = -1;
+    int dst_index = -1;
+
+    readSector(&(node_fs_buf.nodes[0]), FS_NODE_SECTOR_NUMBER);
+    readSector(&(node_fs_buf.nodes[32]), FS_NODE_SECTOR_NUMBER + 1);
+
+    for(i=0; i<FS_MAX_NODE; i++){
+        if(strcmp(node_fs_buf.nodes[i].node_name, src) && node_fs_buf.nodes[i].parent_index == cwd){
+            src_index = i;
+            break;
+        }
+    }
+
+    if(src_index == -1){
+        printString("Error: Source not found\n");
+        return;
+    }
+
+    for(i=0; i<FS_MAX_NODE; i++){
+        if(strcmp(node_fs_buf.nodes[i].node_name, dst) && node_fs_buf.nodes[i].parent_index == cwd){
+            dst_index = i;
+            break;
+        }
+    }
+
+    if(dst_index == -1){
+        printString("Error: Destination not found\n");
+        return;
+    }
+
+    if(node_fs_buf.nodes[dst_index].data_index == FS_NODE_D_DIR){
+        node_fs_buf.nodes[src_index].parent_index = dst_index;
+        writeSector(&(node_fs_buf.nodes[0]), FS_NODE_SECTOR_NUMBER);
+        writeSector(&(node_fs_buf.nodes[32]), FS_NODE_SECTOR_NUMBER + 1);
+        printString("File moved\n");
+    }else{
+        printString("Error: Destination is not a directory\n");
+    }
+
+}
+
 
 // TODO: 9. Implement cp function
 void cp(byte cwd, char* src, char* dst) {}
