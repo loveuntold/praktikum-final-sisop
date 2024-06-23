@@ -226,7 +226,6 @@ void mv(byte cwd, char* src, char* dst){
                 if(strcmp(node_fs_buf.nodes[i].node_name, dst) && node_fs_buf.nodes[i].parent_index == cwd){
                     if(node_fs_buf.nodes[i].data_index == FS_NODE_D_DIR){
                         parent_index = i;
-                        strcpy(filename, src);
                         break;
                     }else{
                         printString("Error: Destination is not a directory\n");
@@ -242,7 +241,7 @@ void mv(byte cwd, char* src, char* dst){
         }
     
     }
-
+  
     for(i=0; i<FS_MAX_NODE; i++){
         if(strcmp(node_fs_buf.nodes[i].node_name, filename) && node_fs_buf.nodes[i].parent_index == parent_index){
             printString("Error: File already exists\n");
@@ -256,12 +255,14 @@ void mv(byte cwd, char* src, char* dst){
     writeSector(&(node_fs_buf.nodes[0]), FS_NODE_SECTOR_NUMBER);
     writeSector(&(node_fs_buf.nodes[32]), FS_NODE_SECTOR_NUMBER + 1);
 
+
+    printString("File moved\n");
 } 
 
-
-
 // TODO: 9. Implement cp function
-void cp(byte cwd, char* src, char* dst) {}
+void cp(byte cwd, char* src, char* dst){
+  
+}
 
 // TODO: 10. Implement cat function
 void cat(byte cwd, char* filename) {}
