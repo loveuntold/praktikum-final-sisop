@@ -217,6 +217,7 @@ void mv(byte cwd, char* src, char* dst){
         for(i = strlen(dst) - 1; i >= 0; i--){
             if(dst[i] == '/'){
                 len = i;
+                dst[i] = '\0';
                 break;
             }
         }
@@ -257,10 +258,11 @@ void mv(byte cwd, char* src, char* dst){
 
 
     printString("File moved\n");
-} 
+}
 
 // TODO: 9. Implement cp function
 void cp(byte cwd, char* src, char* dst){
+  
   
 }
 
